@@ -37,12 +37,12 @@ class QuotesSpider(scrapy.Spider):
                 "author": q.xpath("span/small[@class='author']/text()").get().strip(),
                 "tags": q.xpath("div[@class='tags']/a/text()").extract()
             }
-            #yield QuoteItem(quote=quote, author=author, tags=tags)
+
             yield response.follow(url=self.start_urls[0] + q.xpath("span/a/@href").get(), callback=self.parse_author)
 
         next_link = response.xpath("/html//li[@class='next']/a/@href").get()
         if next_link:
-            yield scrapy.Request(url=self.start_urls[0] + next_link)
+            yield scrapy.Request(url=self.start_urls[0] + next_link[1:])
 
 
     def parse_author(self, response, **kwargs):
@@ -63,12 +63,14 @@ if __name__ == '__main__':
         data = json.load(file)
         for el in data:
             author = Author(fullname=el.get("fullname"), born_date=el.get("born_date"),
-                           born_location=el.get("born_location"), description=el.get("description"))
+                           born_location=el.get("born_location"), description=el.get("description")) #.replace("[", "").replace("]", ""))
+            print(author.fullname)
             author.save()
 
     with (open("quotes.json", encoding='utf-8') as file):
         data = json.load(file)
         for el in data:
+            print(el.get('author'))
             author, *_ = Author.objects(fullname=el.get('author'))
             quote = Quotes(quote=el.get("quote"), author=author, tags=el.get('tags'))
             quote.save()
